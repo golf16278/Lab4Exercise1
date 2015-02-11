@@ -16,11 +16,16 @@ import android.widget.TextView;
 public class MainActivity extends ActionBarActivity {
 
     CourseDBHelper helper;
+    SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        helper = new CourseDBHelper(this);
+        db = helper.getReadableDatabase();
+
 
     }
 
@@ -29,6 +34,31 @@ public class MainActivity extends ActionBarActivity {
         super.onResume();
 
         // This method is called when this activity is put foreground.
+
+
+        Cursor c = db.rawQuery("SELECT SUM(credit) AS TotalCredit, SUM(credit*value) AS TGP FROM course", null);
+        c.moveToFirst();
+
+        int totalCredit = c.getInt(c.getColumnIndex("TotalCredit"));
+        double TGP = c.getDouble(c.getColumnIndex("TGP"));
+        double GPA = 0;
+
+        if(totalCredit !=0 ){
+            GPA = TGP / totalCredit;
+        }
+
+        String totalCredit_s = Integer.toString(totalCredit);
+        String TGP_s = String.format("%.2f",TGP);
+        String GPA_s = String.format("%.2f",GPA);
+
+        TextView tvGP = (TextView)findViewById(R.id.tvGP);
+        TextView tvCR = (TextView)findViewById(R.id.tvCR);
+        TextView tvGPA = (TextView)findViewById(R.id.tvGPA);
+
+        tvGP.setText(TGP_s);
+        tvCR.setText(totalCredit_s);
+        tvGPA.setText(GPA_s);
+
 
     }
 
@@ -49,6 +79,9 @@ public class MainActivity extends ActionBarActivity {
 
             case R.id.btReset:
 
+                db.delete("course","",null);
+                onResume();
+
                 break;
         }
     }
@@ -61,6 +94,25 @@ public class MainActivity extends ActionBarActivity {
                 int credit = data.getIntExtra("credit", 0);
                 String grade = data.getStringExtra("grade");
 
+                helper = new CourseDBHelper(this);
+                SQLiteDatabase db = helper.getWritableDatabase();
+                ContentValues r = new ContentValues();
+
+                r.put("code",code);
+                r.put("credit",credit);
+                r.put("grade",grade);
+                r.put("value",gradeToValue(grade));
+
+                long new_id= db.insert("course",null,r);
+
+                if(new_id == -1){
+                    Log.d("Insert Status","Fail");
+                }else{
+                    Log.d("Insert Status","Success");
+                }
+
+
+                db.close();
             }
         }
 
@@ -85,6 +137,45 @@ public class MainActivity extends ActionBarActivity {
         else
             return 0.0;
     }
+
+    void calculateGPA(){
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

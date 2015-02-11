@@ -4,13 +4,18 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Adapter;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.Toast;
 
 
-public class ListCourseActivity extends ActionBarActivity {
+public class ListCourseActivity extends ActionBarActivity implements AdapterView.OnItemClickListener,AdapterView.OnItemLongClickListener{
 
     CourseDBHelper helper;
     SimpleCursorAdapter adapter;
@@ -20,7 +25,19 @@ public class ListCourseActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_course);
 
+        helper = new CourseDBHelper(this);
+        SQLiteDatabase db = helper.getReadableDatabase();
+        Cursor c = db.rawQuery("SELECT _id, code, (grade || ' ( ' || credit || ' credits )') AS temp FROM course;",null);
+
+        adapter = new SimpleCursorAdapter(this,android.R.layout.simple_list_item_2,c,new String[] {"code","temp"},new int[] {android.R.id.text1,android.R.id.text2},0);
+
+        ListView lv = (ListView)findViewById(R.id.listView);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener(this);
+        lv.setOnItemLongClickListener(this);
+
     }
+
 
 
     @Override
@@ -43,5 +60,34 @@ public class ListCourseActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+          Log.d("course", id + " is clicked.");
+
+    }
+
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+
+        SQLiteDatabase db = helper.getWritableDatabase();
+
+        int n = db.delete("course","_id = ?", new String[]{Long.toString(id)});
+
+        if(n == 1){
+
+            Toast t = Toast.makeText(this.getApplicationContext(),"Successfully deleted",Toast.LENGTH_SHORT);
+            t.show();
+
+            Cursor c = db.rawQuery("SELECT _id, code, (grade || ' ( ' || credit || ' credits )') AS temp FROM course;",null);
+            adapter.changeCursor(c);
+
+        }
+
+        db.close();
+
+        return true;
     }
 }
